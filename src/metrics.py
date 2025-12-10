@@ -33,36 +33,37 @@ def calculate_business_cost(y_true: np.ndarray,
 
 
 def calculate_all_metrics(y_true: np.ndarray,
-                          y_pred: np.ndarray,
-                          y_proba: np.ndarray = None) -> Dict[str, float]:
+                          y_pred_proba: np.ndarray,
+                          threshold: float = 0.5) -> Dict[str, float]:
     """
     Calcule toutes les métriques techniques et métier.
 
     Args:
         y_true: Vraies étiquettes
-        y_pred: Prédictions binaires
-        y_proba: Probabilités prédites (optionnel)
+        y_pred_proba: Probabilités prédites (entre 0 et 1)
+        threshold: Seuil de décision (défaut: 0.5)
 
     Returns:
         Dictionnaire avec toutes les métriques
     """
     metrics = {}
 
+    # Convert probabilities to binary predictions
+    y_pred = (y_pred_proba >= threshold).astype(int)
+
     # Métriques techniques
     metrics['accuracy'] = accuracy_score(y_true, y_pred)
     metrics['precision'] = precision_score(y_true, y_pred, zero_division=0)
     metrics['recall'] = recall_score(y_true, y_pred, zero_division=0)
-    metrics['f1_score'] = f1_score(y_true, y_pred, zero_division=0)
-
-    if y_proba is not None:
-        metrics['auc_roc'] = roc_auc_score(y_true, y_proba)
+    metrics['f1'] = f1_score(y_true, y_pred, zero_division=0)
+    metrics['auc'] = roc_auc_score(y_true, y_pred_proba)
 
     # Matrice de confusion
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    metrics['true_negatives'] = tn
-    metrics['false_positives'] = fp
-    metrics['false_negatives'] = fn
-    metrics['true_positives'] = tp
+    metrics['true_negatives'] = int(tn)
+    metrics['false_positives'] = int(fp)
+    metrics['false_negatives'] = int(fn)
+    metrics['true_positives'] = int(tp)
 
     # Coût métier
     metrics['business_cost'] = calculate_business_cost(y_true, y_pred)
@@ -101,6 +102,55 @@ def find_optimal_threshold(y_true: np.ndarray,
     minimal_cost = costs[optimal_idx]
 
     return optimal_threshold, minimal_cost, thresholds, costs
+
+
+def optimize_threshold(y_true: np.ndarray,
+                      y_proba: np.ndarray,
+                      metric: str = 'f1',
+                      fn_cost: float = 1.0,
+                      fp_cost: float = 10.0) -> float:
+    """
+    Trouve le seuil optimal selon la métrique spécifiée.
+
+    Args:
+        y_true: Vraies étiquettes
+        y_proba: Probabilités prédites
+        metric: Métrique à optimiser ('f1', 'business_cost', 'precision', 'recall')
+        fn_cost: Coût d'un faux négatif (pour business_cost)
+        fp_cost: Coût d'un faux positif (pour business_cost)
+
+    Returns:
+        Seuil optimal
+    """
+    if metric == 'business_cost':
+        optimal_threshold, _, _, _ = find_optimal_threshold(y_true, y_proba, fn_cost, fp_cost)
+        return optimal_threshold
+
+    # Pour les autres métriques
+    thresholds = np.linspace(0.0, 1.0, 100)
+    best_score = -np.inf if metric != 'business_cost' else np.inf
+    best_threshold = 0.5
+
+    for threshold in thresholds:
+        y_pred = (y_proba >= threshold).astype(int)
+
+        if metric == 'f1':
+            score = f1_score(y_true, y_pred, zero_division=0)
+            if score > best_score:
+                best_score = score
+                best_threshold = threshold
+        elif metric == 'precision':
+            score = precision_score(y_true, y_pred, zero_division=0)
+            if score > best_score:
+                best_score = score
+                best_threshold = threshold
+        elif metric == 'recall':
+            score = recall_score(y_true, y_pred, zero_division=0)
+            if score > best_score:
+                best_score = score
+                best_threshold = threshold
+
+    return best_threshold
 
 
 def plot_cost_vs_threshold(thresholds: np.ndarray,

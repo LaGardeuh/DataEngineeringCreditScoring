@@ -1,2 +1,65 @@
+# IDE
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data (keep only description files)
 /data
+data/*.csv
+!data/*description*.csv
+!data/README.md
+
+# Models (exclude large files)
+models/*.pkl
+models/*.joblib
+models/*.h5
+*.model
+
+# Reports
+reports/*.pdf
+reports/figures/*.png
+reports/figures/*.jpg
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+.coverage
+htmlcov/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
