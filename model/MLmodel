@@ -1,23 +1,22 @@
 artifact_path: file:///Users/thomasbechu/Documents/Studies/ING4/Majeure IA S7/Data
-  Engineering & Analysis/Projet Final/Projet Final/notebooks/../mlruns/370453507538469996/models/m-ab55092cbcda4eb9b94118999494a9b2/artifacts
+  Engineering & Analysis/Projet Final/Projet Final/notebooks/../mlruns/370453507538469996/models/m-77eff5e33ce54d9d89c813c77bc0410c/artifacts
 flavors:
+  lightgbm:
+    code: null
+    data: model.pkl
+    lgb_version: 4.6.0
+    model_class: lightgbm.sklearn.LGBMClassifier
   python_function:
+    data: model.pkl
     env:
       conda: conda.yaml
       virtualenv: python_env.yaml
-    loader_module: mlflow.sklearn
-    model_path: model.pkl
-    predict_fn: predict
+    loader_module: mlflow.lightgbm
     python_version: 3.11.14
-  sklearn:
-    code: null
-    pickled_model: model.pkl
-    serialization_format: cloudpickle
-    sklearn_version: 1.7.2
 mlflow_version: 3.7.0
-model_id: m-ab55092cbcda4eb9b94118999494a9b2
-model_size_bytes: 488545523
-model_uuid: m-ab55092cbcda4eb9b94118999494a9b2
+model_id: m-77eff5e33ce54d9d89c813c77bc0410c
+model_size_bytes: 379794
+model_uuid: m-77eff5e33ce54d9d89c813c77bc0410c
 prompts: null
-run_id: e4f3bd787fae423f98bfbd9a049a5e85
-utc_time_created: '2025-12-13 19:03:36.897831'
+run_id: 6bb9c83da68a4367b061bf5a07b7c998
+utc_time_created: '2025-12-13 22:24:38.455986'
