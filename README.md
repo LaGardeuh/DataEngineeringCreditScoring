@@ -1,246 +1,291 @@
-# Projet Final : Data Engineering & Credit Scoring
+# Credit Scoring - Home Credit Default Risk
 
-## 1. Objectif
-
-Vous êtes Data Scientist au sein d'une société financière spécialisée dans les crédits à la consommation destinés à des clients ayant peu ou pas d'historique de prêt. L'entreprise souhaite mettre en place un outil complet de credit scoring permettant :
-
-- d'évaluer automatiquement la probabilité qu'un client rembourse son crédit
-- de classer chaque demande en crédit accordé ou crédit refusé
-- de s'appuyer sur des données variées (comportementales, financières externes, etc.)
-
-Les données sont disponibles ici : https://www.kaggle.com/c/home-credit-default-risk/data
-
-### 1.1 Votre mission
-
-- **Construire et optimiser un modèle de scoring** qui donnera une prédiction sur la probabilité de faillite d'un client de façon automatique.
-- **Analyser les features** qui contribuent le plus au modèle (feature importance globale et locale), afin de permettre à un chargé d'études de mieux comprendre le score attribué.
-- **Mettre en œuvre une approche MLOps** de bout en bout, du tracking des expérimentations à la pré-production du modèle.
-
-> **Note** : Vous êtes encouragés à utiliser des kernels Kaggle pour l'analyse exploratoire et le feature engineering, mais vous devez les analyser et les adapter à vos besoins.
-
-### 1.2 Composante MLOps attendue
-
-La mise en œuvre doit inclure au minimum :
-
-- Le tracking des expérimentations avec MLflow dans les notebooks d'entraînement
-- L'utilisation de l'interface MLflow UI pour visualiser les runs
-- Le stockage centralisé des modèles dans un model registry MLflow
-- Le test du serving MLflow
-
-### 1.3 Enjeux métiers à intégrer
-
-Deux éléments majeurs doivent être pris en compte :
-
-1. **Le déséquilibre** entre bons et mauvais clients dans le jeu de données
-2. **L'asymétrie du coût métier** : un faux négatif (FN) coûte environ **dix fois plus** qu'un faux positif (FP)
-
-### 1.4 Score métier et optimisation du seuil
-
-- Définir un score métier pour comparer les modèles en minimisant le coût des erreurs FN/FP
-- Optimiser le seuil de décision (ne pas utiliser le seuil standard de 0.5)
-- Conserver les métriques techniques (AUC, accuracy) à titre de contrôle
-
-### 1.5 Méthodologie de modélisation
-
-- Validation croisée obligatoire
-- Optimisation des hyperparamètres (GridSearchCV ou équivalent)
-- Vigilance sur l'overfitting (AUC > 0.82 doit alerter)
+Système de scoring crédit basé sur l'apprentissage automatique pour prédire le risque de défaut de paiement.
 
 ---
 
-## 2. Étapes du Projet
+## Contexte
 
-### 2.1 Étape 1 : Préparer, nettoyer et enrichir les données
+En tant que Data Scientist au sein d'une société financière, ce projet vise à développer un outil de **credit scoring** permettant :
 
-**Objectif** : Constituer un dataset propre et enrichi, prêt pour l'entraînement.
+### Enjeu Principal
 
-**Prérequis** :
-- Explorer les données brutes
-- Vérifier les formats et valeurs manquantes
-- Identifier les colonnes clés pour les jointures
-- Prendre en compte le déséquilibre des classes
+**Un faux négatif (FN) coûte 10× plus qu'un faux positif (FP)**
 
-**Recommandations** :
-- Charger chaque fichier séparément et inspecter ses colonnes
-- Utiliser pandas pour fusionner les jeux de données
-- Visualiser la distribution des classes cibles
-- Créer de nouvelles features si nécessaire
-- Explorer les possibilités d'imputation avant de supprimer des colonnes
-
-**Points de vigilance** :
-- Vérifier les doublons
-- Analyser l'importance métier avant de supprimer des colonnes
-- Documenter et justifier les imputations
-- Gérer les duplications lors des fusions
-- Encoder en tenant compte du type de modèle (ordinal vs nominal)
-
-**Outils** : pandas, matplotlib, seaborn, scikit-learn, missingno
+- **Faux Négatif (FN)** : Accorder un crédit à un client qui fera défaut → Perte de ~10× le montant du prêt
+- **Faux Positif (FP)** : Refuser un crédit à un bon client → Perte de 1× profit potentiel
 
 ---
 
-### 2.2 Étape 2 : Traquer les expérimentations avec MLflow
+## Modèle Champion : LightGBM
 
-**Objectif** : Des runs visibles dans l'UI MLflow avec les paramètres testés et les scores obtenus.
+Après comparaison de 4 modèles (Logistic Regression, Random Forest, XGBoost, LightGBM), le modèle **LightGBM** a été sélectionné.
 
-**Recommandations** :
-- Intégrer `mlflow.start_run()` dans vos notebooks
-- Logger les métriques et paramètres principaux
-- Utiliser `mlflow.autolog()` si compatible
-- Activer l'interface avec `mlflow ui`
+### Performances
 
-**Points de vigilance** :
-- Utiliser un environnement virtuel pour éviter les conflits
-- Annoter les expériences (tags, noms, commentaires)
-- Versionner les modèles enregistrés
-- Éviter de sauvegarder des fichiers inutiles
+| Métrique | Valeur |
+|----------|--------|
+| **Modèle** | LightGBM |
+| **AUC** | 0.7793 |
+| **Accuracy** | 0.7246 |
+| **Precision** | 0.1826 |
+| **Recall** | 0.6935 |
+| **F1-Score** | 0.2891 |
+| **Coût Métier** | **30,600** |
+| **Seuil Optimal** | **0.5152** |
 
-**Outils** : MLflow
+### Règle de Décision
 
----
-
-### 2.3 Étape 3 : Modéliser et expérimenter avec plusieurs algorithmes
-
-**Objectif** : Un ou plusieurs modèles entraînés, avec validation croisée et métriques d'évaluation.
-
-**Recommandations** :
-- Commencer par des modèles simples (Logistic Regression, Random Forest)
-- Comparer avec des modèles plus puissants (XGBoost, LightGBM, MLP)
-- Utiliser `StratifiedKFold` pour conserver la distribution des classes
-- Documenter clairement les notebooks
-- Stocker les scores et hyperparamètres testés
-
-**Points de vigilance** :
-- **Toujours utiliser la validation croisée**
-- Utiliser des métriques adaptées : AUC-ROC, Recall, F1-score, Coût métier (FN >> FP)
-- **Stratifier** pour éviter le biais vers la classe majoritaire
-- Gérer le déséquilibre : `class_weight`, SMOTE, etc.
-
-**Outils** : scikit-learn, XGBoost, LightGBM
-
----
-
-### 2.4 Étape 4 : Optimiser les hyperparamètres et le seuil métier
-
-**Objectif** : Un modèle avec hyperparamètres optimisés et un seuil métier ajusté.
-
-**Recommandations** :
-- Utiliser GridSearchCV ou Optuna
-- Définir une fonction de coût pondérant les erreurs FN et FP
-- Tester différents seuils (0.1 à 0.9)
-- Tracer la courbe coût vs. seuil
-
-**Points de vigilance** :
-- Ne pas garder le seuil par défaut (0.5) sans justification
-- Tracer le score métier en fonction du seuil
-- Ne pas optimiser uniquement sur l'AUC ou l'accuracy
-- Tester la robustesse du modèle choisi
-
-**Outils** : scikit-learn (GridSearchCV), Optuna
-
----
-
-## 3. Rendu Final
-
-### 3.1 Structure du dépôt GitHub
-
-```
-credit-scoring/
-│
-├── README.md
-├── requirements.txt
-├── Dockerfile
-├── .gitignore
-│
-├── notebooks/
-│   ├── 01_data_preparation.ipynb
-│   ├── 02_model_training.ipynb
-│   ├── 03_explainability.ipynb
-│   └── 04_mlflow_serving_test.ipynb
-│
-├── src/
-│   ├── data_prep.py
-│   ├── model_utils.py
-│   ├── metrics.py
-│   └── explainability.py
-│
-├── model/
-│   ├── MLmodel
-│   ├── conda.yaml
-│   └── model.pkl
-│
-├── reports/
-│   ├── rapport_credit_scoring.pdf
-│   └── figures/
-│       ├── shap_global.png
-│       ├── shap_local.png
-│       └── courbe_cout_vs_seuil.png
-│
-└── mlruns/  # (facultatif)
+```python
+if probabilité_défaut >= 0.5152:
+    décision = "REFUSER le crédit"  # Risque élevé
+else:
+    décision = "ACCEPTER le crédit"  # Risque acceptable
 ```
 
-### 3.2 Description des fichiers
+### Justification du Seuil
 
-| Fichier/Dossier | Description |
-|-----------------|-------------|
-| `README.md` | Résumé du projet, commandes Docker, commande curl pour l'API, seuil métier choisi, structure du dépôt |
-| `requirements.txt` | Dépendances Python |
-| `Dockerfile` | Configuration pour servir le modèle (port 1234), ne doit PAS réentraîner |
-| `.gitignore` | Exclure : `venv/`, `__pycache__/`, `.ipynb_checkpoints/`, `data/`, `*.csv`, `mlruns/` |
+Le seuil de **0.5152** a été optimisé pour minimiser le coût métier total :
+```
+Coût Total = (Faux Négatifs × 10) + (Faux Positifs × 1)
+```
 
-### 3.3 Notebooks
-
-| Notebook | Contenu |
-|----------|---------|
-| `01_data_preparation.ipynb` | Chargement, fusion, nettoyage, encodage, split train/test, analyse du déséquilibre |
-| `02_model_training.ipynb` | Modèles (baseline + avancés), gestion déséquilibre, validation croisée, tracking MLflow obligatoire, export vers `model/` |
-| `03_explainability.ipynb` | SHAP global et local, export des figures |
-| `04_mlflow_serving_test.ipynb` | Test de l'API, vérification des prédictions, calcul de métrique |
-
-### 3.4 Code Python (src/)
-
-| Fichier | Contenu |
-|---------|---------|
-| `data_prep.py` | Fonctions de chargement, jointure, nettoyage, encodage |
-| `model_utils.py` | Fonctions d'entraînement, split, sauvegarde |
-| `metrics.py` | AUC, précision, rappel, F1, coût métier |
-| `explainability.py` | Calcul SHAP, graphiques globaux et locaux |
-
-### 3.5 Rapport PDF (2-3 pages max)
-
-- Démarche de préparation des données et modélisation
-- Résultats principaux (AUC, seuil optimal, coût métier)
-- Interprétation des variables importantes
-- Capture d'écran MLflow montrant les runs et le modèle choisi
+Ce seuil représente le meilleur équilibre entre :
+- Minimiser les défauts non détectés (FN) qui coûtent cher
+- Accepter un nombre raisonnable de faux positifs (FP)
 
 ---
 
-## 4. Grille d'évaluation (20 points)
+## 📊 Comparaison des Modèles
 
-| Catégorie | Critères | Points |
-|-----------|----------|--------|
-| Structure du dépôt | Arborescence conforme, fichiers obligatoires présents | 2 |
-| README.md | Contexte métier, installation, commandes Docker, test API, seuil métier | 3 |
-| Notebooks | 4 notebooks complets, documentés, reproductibles | 4 |
-| Code Python (src/) | Modularité, fonctions propres et réutilisables | 3 |
-| Tracking MLflow | Runs complets, modèle dans le registry, versionnage | 3 |
-| Modèle + Docker | MLmodel, conda.yaml, model.pkl, Dockerfile fonctionnel | 3 |
-| Rapport PDF | Synthèse claire, résultats, interprétabilité, figures | 2 |
+| Modèle | AUC | Coût Métier | Seuil Optimal |
+|--------|-----|-------------|---------------|
+| **LightGBM** 🏆 | **0.7793** | **30,600** | 0.5152 |
+| XGBoost | 0.7695 | 31,411 | 0.5253 |
+| Logistic Regression | 0.7684 | 31,714 | 0.5152 |
+| Random Forest | 0.7553 | 32,783 | 0.1616 |
+
+**LightGBM** offre le meilleur compromis avec :
+---
+
+## 🛠️ Installation
+
+### Prérequis
+
+- Python 3.11+
+- Docker
+- Git
+
+### Étape 1 : Cloner le Dépôt
+
+```bash
+git clone <url-du-repo>
+cd "Projet Final"
+```
+
+### Étape 2 : Créer un Environnement Virtuel
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate 
+```
+
+### Étape 3 : Installer les Dépendances
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
-## 5. Oral de validation (5 minutes)
+##  Utilisation
 
-**Conditions** :
-- Ordinateur personnel prêt
-- Conteneur Docker lancé et opérationnel
-- Serveur MLflow (tracking + UI) démarré
-- Serveur de prédiction actif
+### 1. Exploration des Données
 
-**Déroulement** :
-- Démonstration du modèle en serving via Docker
-- Appel API sur un échantillon du jeu de test
-- Évaluation de la maîtrise technique et capacité à expliquer les choix
+```bash
+jupyter notebook notebooks/01_data_preparation.ipynb
+```
 
-**Décision** :
-- Oral validé : note GitHub confirmée
-- Oral non validé : note réduite ou invalidée
+### 2. Entraînement des Modèles
+
+```bash
+# Démarrer MLflow UI (dans un terminal séparé)
+mlflow ui
+
+# Ouvrir le notebook d'entraînement
+jupyter notebook notebooks/02_model_training.ipynb
+```
+
+Visualiser les expériences : http://localhost:5000
+
+### 3. Analyse d'Explicabilité (SHAP)
+
+```bash
+jupyter notebook notebooks/03_explainability.ipynb
+```
+
+### 4. Test du Serving MLflow
+
+```bash
+jupyter notebook notebooks/04_mlflow_serving_test.ipynb
+```
+
+---
+
+## 🐳 Déploiement avec Docker
+
+### Construction de l'Image
+
+```bash
+docker build -t credit-scoring:latest .
+```
+
+### Lancement du Conteneur
+
+```bash
+docker run -p 1234:1234 credit-scoring:latest
+```
+
+Le serveur d'inférence sera accessible sur `http://localhost:1234`
+
+### Alternative : Docker Compose
+
+```bash
+docker-compose up
+```
+
+---
+
+## 🔌 Test de l'API
+
+### Commande curl
+
+```bash
+curl -X POST http://localhost:1234/invocations \
+  -H 'Content-Type: application/json' \
+  -d @sample_request.json
+```
+
+### Format de la Requête
+
+```json
+{
+  "dataframe_split": {
+    "columns": ["feature1", "feature2", "..."],
+    "data": [[valeur1, valeur2, ...]]
+  }
+}
+```
+
+### Réponse Attendue
+
+```json
+[0.3456]  # Probabilité de défaut (entre 0 et 1)
+```
+
+**Interprétation** :
+- Si probabilité < 0.5152 → **Accepter** le crédit
+- Si probabilité ≥ 0.5152 → **Refuser** le crédit
+---
+
+## 📁 Structure du Projet
+
+```
+Projet Final/
+│
+├── README.md                      # Ce fichier
+├── requirements.txt               # Dépendances Python
+├── Dockerfile                     # Configuration Docker
+├── docker-compose.yml             # Orchestration Docker
+├── .gitignore                     # Fichiers à exclure de Git
+│
+├── notebooks/                     # Notebooks Jupyter
+│   ├── 01_data_preparation.ipynb     # Préparation des données
+│   ├── 02_model_training.ipynb       # Entraînement des modèles
+│   ├── 03_explainability.ipynb       # Analyse SHAP
+│   └── 04_mlflow_serving_test.ipynb  # Test du serving
+│
+├── src/                           # Code source Python
+│   ├── __init__.py
+│   ├── data_prep.py                  # Fonctions de préparation
+│   ├── model_utils.py                # Utilitaires de modélisation
+│   ├── metrics.py                    # Métriques métier
+│   └── explainability.py             # Fonctions SHAP
+│
+├── model/                         # Modèle MLflow (LightGBM)
+│   ├── MLmodel                       # Métadonnées MLflow
+│   ├── conda.yaml                    # Environnement conda
+│   ├── model.pkl                     # Modèle sérialisé (371 KB)
+│   ├── python_env.yaml               # Environnement Python
+│   └── requirements.txt              # Dépendances du modèle
+│
+├── models/                        # Modèles entraînés (sauvegarde)
+│   ├── lightgbm.pkl
+│   ├── xgboost.pkl
+│   ├── random_forest.pkl
+│   ├── logistic_regression.pkl
+│   └── scaler.pkl
+│
+├── reports/                       # Rapports et visualisations
+│   ├── rapport_credit_scoring.pdf    # Rapport final (2-3 pages)
+│   ├── model_comparison.csv          # Comparaison des modèles
+│   └── figures/                      # Graphiques
+│       ├── shap_global.png              # Importance globale
+│       ├── shap_local.png               # Importance locale
+│       ├── shap_summary.png
+│       └── model_comparison.png
+│
+├── data/                          # Données (non versionnées)
+│   └── application_train_prepared.csv
+│
+└── mlruns/                        # Tracking MLflow (non versionné)
+```
+
+---
+
+## 🔬 MLflow - Suivi des Expérimentations
+
+### Démarrer le Serveur MLflow
+
+```bash
+mlflow ui
+```
+
+Accéder à l'interface : http://localhost:5000
+
+
+### Modèles Enregistrés
+
+- **Nom** : `credit_scoring_model`
+- **Version active** : LightGBM (la plus récente)
+- **Run ID** : Consultable dans MLflow UI
+
+---
+
+## 📈 Métriques et Optimisation
+
+### Fonction de Coût Métier
+
+```python
+Coût Total = (FN × 10) + (FP × 1)
+```
+
+Où :
+- **FN** = Nombre de faux négatifs (défauts non détectés)
+- **FP** = Nombre de faux positifs (bons clients refusés)
+
+### Stratégie d'Optimisation
+
+1. **Validation croisée** : StratifiedKFold (5 folds)
+2. **Gestion du déséquilibre** : `class_weight='balanced'`
+3. **Hyperparamètres** : RandomizedSearchCV
+4. **Seuil métier** : Optimisation sur fonction de coût
+
+### Déséquilibre des Classes
+
+- **Bons clients (0)** : 91.9%
+- **Mauvais clients (1)** : 8.1%
+- **Ratio** : 11.39:1
+
+
+Crédits: IR4 2027 - Thomas Béchu, Noé Guengant, Malo Kerautret
