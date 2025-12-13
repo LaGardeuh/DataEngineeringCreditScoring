@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 
 def calculate_business_cost(y_true: np.ndarray,
                            y_pred: np.ndarray,
-                           fn_cost: float = 1.0,
-                           fp_cost: float = 10.0) -> float:
+                           fn_cost: float = 10.0,
+                           fp_cost: float = 1.0) -> float:
     """
     Calcule le coût métier basé sur les erreurs FN et FP.
 

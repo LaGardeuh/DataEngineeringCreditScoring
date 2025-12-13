@@ -1,0 +1,73 @@
+# Data files (too large for Docker image)
+data/*.csv
+!data/HomeCredit_columns_description.csv
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter Notebooks (not needed in production)
+notebooks/
+.ipynb_checkpoints/
+
+# Reports and figures (generated, not needed in image)
+reports/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+PLAN.md
+STEPS.md
+PYTORCH_MIGRATION.md
+
+# PDF files
+*.pdf
+
+# Testing and development
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
+# Environment variables (sensitive)
+.env
+.env.local
+
+# MLflow UI database
+mlflow.db
+mlflow.db.lock
+
+# Large model files (will be copied selectively)
+*.pkl
+!models/*.pkl
